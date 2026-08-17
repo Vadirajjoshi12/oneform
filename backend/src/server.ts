@@ -9,7 +9,7 @@ const PORT = Number(process.env.PORT) || 8000;
 const startServer = async () => {
   await connectDatabase();
 
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 ONEFORM Backend running on port ${PORT}`);
   });
 };
