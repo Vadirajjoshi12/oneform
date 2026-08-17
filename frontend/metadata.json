@@ -1,0 +1,6 @@
+{
+  "name": "1FORM - Community Order Pooling",
+  "description": "Combine quick-commerce orders with nearby community members to eliminate delivery fees and reach free delivery thresholds.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
