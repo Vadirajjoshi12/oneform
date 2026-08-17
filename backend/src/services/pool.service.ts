@@ -28,7 +28,7 @@ export const buildPool = (body: any) => {
     pickupLocation: body.pickupLocation,
 
     location: {
-      type: "Point",
+      type: "Point" as const,
       coordinates: [
         body.location.lng,
         body.location.lat,
@@ -41,9 +41,9 @@ export const buildPool = (body: any) => {
 
     expiresAt,
 
-    status: "active",
+    status: "active" as const,
 
-    deliveryStatus: "Cart Open",
+    deliveryStatus: "Cart Open" as const,
 
     note: body.note,
 
