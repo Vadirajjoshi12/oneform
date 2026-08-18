@@ -348,7 +348,10 @@ const remaining =
                     type="button"
                     disabled={hostActionLoading || pool.status === 'cancelled' || pool.status === 'expired'}
                     onClick={async () => {
-                      const hostPhoneNum = pool.hostPhone;
+                      const hostPhoneNum =
+  pool.hostPhone ||
+  localStorage.getItem(`oneform_host_phone_${pool.id}`) ||
+  '';
                       if (!hostPhoneNum) {
                         alert('Host phone number is required.');
                         return;
@@ -379,7 +382,10 @@ const remaining =
                     type="button"
                     disabled={hostActionLoading || pool.status === 'cancelled' || pool.status === 'expired'}
                     onClick={async () => {
-                      const hostPhoneNum = pool.hostPhone;
+                      const hostPhoneNum =
+  pool.hostPhone ||
+  localStorage.getItem(`oneform_host_phone_${pool.id}`) ||
+  '';
                       if (!hostPhoneNum) {
                         alert('Host phone number is required.');
                         return;

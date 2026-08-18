@@ -81,6 +81,13 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
     const backendPlatform = platform === 'Swiggy Instamart' ? 'Instamart' : platform;
     const lat = locationState.coords?.lat || activeCommunity.lat;
     const lng = locationState.coords?.lng || activeCommunity.lng;
+    console.log("📍 CREATE POOL LOCATION:", {
+    lat,
+    lng,
+    gpsCoords: locationState.coords,
+    communityLat: activeCommunity.lat,
+    communityLng: activeCommunity.lng,
+  });
 
     setIsSubmitting(true);
 
@@ -110,6 +117,10 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
       const newPool = mapBackendPoolToOrderPool(response.data, activeCommunity.name);
       newPool.hostPhone = hostPhone.trim();
+      localStorage.setItem(
+      `oneform_host_phone_${newPool.id}`,
+      hostPhone.trim()
+    );
       newPool.hostPin = hostPin.trim() || '1234';
       if (response.hostToken) {
         newPool.hostToken = response.hostToken;
