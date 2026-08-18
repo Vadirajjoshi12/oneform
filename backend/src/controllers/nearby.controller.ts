@@ -23,10 +23,12 @@ export const getNearbyPools = async (
       });
     }
 
+    // Find active AND threshold-met pools that have not expired
     let pools = await Pool.find({
-      status: "active",
+      status: {
+        $in: ["active", "threshold_met"]
+      },
 
-      // Only pools that haven't expired
       expiresAt: {
         $gt: new Date()
       },
@@ -48,9 +50,11 @@ export const getNearbyPools = async (
       await syncPoolState(pool);
     }
 
-    // Remove pools that reached the threshold
+    // Keep active and threshold-met pools visible
     pools = pools.filter(
-      (pool) => pool.status === "active"
+      (pool) =>
+        pool.status === "active" ||
+        pool.status === "threshold_met"
     );
 
     return res.json({
