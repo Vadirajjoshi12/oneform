@@ -37,25 +37,27 @@ export const publicPoolDTO = (pool: any) => {
     );
 
     return {
+    id: pool._id,
+    platform: pool.platform,
+    pickupLocation: pool.pickupLocation,
 
-        id: pool._id,
+    memberCount,
+    poolTotal,
+    remainingAmount,
+    timeLeftMinutes,
 
-        platform: pool.platform,
+    status: pool.status,
+    deliveryStatus: pool.deliveryStatus,
 
-        pickupLocation: pool.pickupLocation,
-
-        memberCount,
-
-        poolTotal,
-
-        remainingAmount,
-
-        timeLeftMinutes,
-
-        status: pool.status,
-
-        deliveryStatus: pool.deliveryStatus
-
-    };
+    members: pool.members.map((member: any) => ({
+        id: member._id,
+        name: member.name,
+        phone: member.phone,
+        isHost: member.isHost,
+        cartTotal: member.cartTotal,
+        items: member.items,
+        joinedAt: member.joinedAt
+    }))
+};
 
 };
