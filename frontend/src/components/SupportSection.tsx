@@ -44,7 +44,7 @@ export const SupportSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          href="https://wa.me/919876543210"
+          href="https://wa.me/917026707077"
           target="_blank"
           rel="noopener noreferrer"
           className="group bg-[#f5f5f7] hover:bg-emerald-50/80 border border-black/[0.05] hover:border-emerald-500/30 p-6 sm:p-8 rounded-[24px] flex flex-col justify-between transition-all duration-200 hover:shadow-md"

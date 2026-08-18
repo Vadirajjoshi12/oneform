@@ -54,6 +54,25 @@ export const AboutSection: React.FC = () => {
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Vadiraj */}
+          <div className="bg-white/90 border border-black/[0.08] p-6 rounded-2xl space-y-3 hover:border-black/20 transition-all shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-slate-900 text-white font-black text-base flex items-center justify-center shrink-0 shadow-xs">
+                V
+              </div>
+              <div>
+                <h4 className="font-extrabold text-base text-[#1d1d1f] tracking-tight">Vadiraj</h4>
+                <span className="text-[11px] text-emerald-900 bg-emerald-500/10 px-2.5 py-0.5 rounded-full font-extrabold inline-block border border-emerald-500/20">
+                  Founder & Systems
+                </span>
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+              Handles technical execution—from database design to real-time sync systems.
+            </p>
+          </div>
+          
           {/* Yashvanth */}
           <div className="bg-white/90 border border-black/[0.08] p-6 rounded-2xl space-y-3 hover:border-black/20 transition-all shadow-2xs">
             <div className="flex items-center gap-3">
@@ -72,23 +91,7 @@ export const AboutSection: React.FC = () => {
             </p>
           </div>
 
-          {/* Vadiraj */}
-          <div className="bg-white/90 border border-black/[0.08] p-6 rounded-2xl space-y-3 hover:border-black/20 transition-all shadow-2xs">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-slate-900 text-white font-black text-base flex items-center justify-center shrink-0 shadow-xs">
-                V
-              </div>
-              <div>
-                <h4 className="font-extrabold text-base text-[#1d1d1f] tracking-tight">Vadiraj</h4>
-                <span className="text-[11px] text-emerald-900 bg-emerald-500/10 px-2.5 py-0.5 rounded-full font-extrabold inline-block border border-emerald-500/20">
-                  Founder & Systems
-                </span>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-              Handles technical execution—from database design to real-time sync systems.
-            </p>
-          </div>
+        
         </div>
       </div>
 
