@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
+import rateLimit from "express-rate-limit";
 
 import healthRoutes from "./routes/health.routes";
 import poolRoutes from "./routes/pool.routes";
@@ -23,7 +24,22 @@ app.use(
 app.use(helmet());
 app.use(compression());
 
-app.use(express.json());
+// Limit request body size to reduce accidental or abusive oversized payloads.
+app.use(express.json({ limit: "100kb" }));
+
+// General API protection: allow normal app usage while throttling abusive bursts.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests. Please try again later.",
+  },
+});
+
+app.use("/api", apiLimiter);
 
 // Routes
 app.use("/health", healthRoutes);
