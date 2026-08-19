@@ -331,9 +331,10 @@ const handleUpdateDeliveryStatus = async (
   }
 
   const hostPhone =
-    pool.hostPhone ||
-    pool.members?.find((member) => member.isHost)?.phone ||
-    '';
+  pool.hostPhone ||
+  pool.members?.find((member) => member.isHost)?.phone ||
+  pool.items?.find((item) => item.isHost)?.memberPhone ||
+  '';
 
   if (!hostPhone) {
     setToastMessage(
