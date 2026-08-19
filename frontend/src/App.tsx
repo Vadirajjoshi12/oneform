@@ -161,7 +161,7 @@ export default function App() {
     setToastMessage(`🎉 1Form Pool started for ${newPool.platform} at ${newPool.pickupLocation}!`);
   };
 
-const handleRefreshPoolDetails = async (poolId: string) => {
+const handleRefreshPoolDetails = useCallback(async (poolId: string) => {
   try {
     const res = await api.getPoolDetails(poolId);
 
@@ -194,14 +194,13 @@ const handleRefreshPoolDetails = async (poolId: string) => {
       setSelectedPoolForDetail(updatedPool);
     }
 
-  } catch (err: any) {
+    } catch (err: any) {
     console.warn(
       'Failed to refresh pool details:',
       err.message
     );
   }
-};
-
+}, [activeCommunity.name]);
   const handleJoinPoolBackend = async (poolId: string, name: string, phone: string, itemName: string, price: number) => {
     const res = await api.joinPool(poolId, {
       name,
@@ -329,11 +328,6 @@ const handleUpdateDeliveryStatus = async (
   }
 
   try {
-    console.log('🚨 DELIVERY STATUS REQUEST:', {
-      poolId,
-      hostPhone: pool.hostPhone,
-      deliveryStatus,
-    });
 
     // Update backend first
     const res = await api.updateDeliveryStatus(
@@ -341,9 +335,6 @@ const handleUpdateDeliveryStatus = async (
       pool.hostPhone,
       deliveryStatus
     );
-
-    console.log('✅ DELIVERY STATUS RESPONSE:', res);
-
     if (res.data) {
       const existing = pools.find((p) => p.id === poolId);
 
@@ -353,8 +344,6 @@ const handleUpdateDeliveryStatus = async (
         activeCommunity.name,
         existing
       );
-
-      console.log('🔄 UPDATED POOL FOR UI:', updatedPool);
 
       // Update pools list
       setPools((prevPools) =>
@@ -377,11 +366,6 @@ const handleUpdateDeliveryStatus = async (
       );
     }
   } catch (error: any) {
-    console.error(
-      '❌ Delivery status update failed:',
-      error
-    );
-
     setToastMessage(
       error.message || 'Failed to update delivery status'
     );
