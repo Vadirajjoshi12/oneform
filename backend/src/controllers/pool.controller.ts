@@ -139,6 +139,7 @@ export const getPoolById = async (
         members: pool.members.map((member: any) => ({
           id: member._id,
           name: member.name,
+          phone: member.phone,
           isHost: member.isHost,
           cartTotal: member.cartTotal,
 
