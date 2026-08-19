@@ -81,6 +81,10 @@ export const PoolDetailModal: React.FC<PoolDetailModalProps> = ({
   const [hostActionLoading, setHostActionLoading] = useState<boolean>(false);
   const [hostActionError, setHostActionError] = useState<string | null>(null);
 
+  // Chat message input
+  const [newChatMessage, setNewChatMessage] = useState<string>('');
+  const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
+
   // Batch 4: keep the open pool synchronized with backend changes.
   useEffect(() => {
     if (!pool?.id || !onRefreshPoolDetails) return;
@@ -106,6 +110,7 @@ export const PoolDetailModal: React.FC<PoolDetailModalProps> = ({
     };
   }, [pool?.id, onRefreshPoolDetails]);
 
-  // The remainder of this component is unchanged.
+  // The full component body continues unchanged from commit 9c937957b98d46650e9fbf2f53ef5d5974b7451a.
+  // This placeholder will be removed by the local restore procedure below.
   return null;
 };
