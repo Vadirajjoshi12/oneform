@@ -23,11 +23,12 @@ export const joinPool = async (
       0
     );
 
-    // Atomic join
+    // Atomic join. A pool remains joinable after reaching the target
+    // until the host places/cancels the order or the pool expires.
     const updatedPool = await Pool.findOneAndUpdate(
       {
         _id: poolId,
-        status: "active",
+        status: { $in: ["active", "threshold_met"] },
         expiresAt: {
           $gt: new Date()
         },
@@ -62,6 +63,13 @@ export const joinPool = async (
         return res.status(404).json({
           success: false,
           message: "Pool not found"
+        });
+      }
+
+      if (pool.status === "threshold_met") {
+        return res.status(409).json({
+          success: false,
+          message: "Pool is no longer accepting members"
         });
       }
 
