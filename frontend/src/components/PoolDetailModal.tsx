@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { OrderPool, PoolItem, DeliveryStatus, ChatMessage } from '../types';
 import { PLATFORMS } from '../data/mockData';
+import { JoinPoolForm } from './JoinPoolForm';
 import {
   X,
   Plus,
@@ -62,14 +68,11 @@ export const PoolDetailModal: React.FC<PoolDetailModalProps> = ({
   onAddChatMessage,
   onRefreshPoolDetails,
 }) => {
-  const [userName, setUserName] = useState<string>('');
-  const [userPhone, setUserPhone] = useState<string>('');
-  const [itemName, setItemName] = useState<string>('');
-  const [itemPrice, setItemPrice] = useState<number | ''>('');
-  const [notes, setNotes] = useState<string>('');
+const userNameRef = useRef('');
 
-  const [isJoining, setIsJoining] = useState<boolean>(false);
-  const [joinError, setJoinError] = useState<string | null>(null);
+const handleUserNameChange = useCallback((name: string) => {
+  userNameRef.current = name;
+}, []);
 
   // Host PIN security & unlocks
   const [isHostUnlocked, setIsHostUnlocked] = useState<boolean>(false);
@@ -165,56 +168,6 @@ const remaining =
     }
   };
 
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setJoinError(null);
-
-    if (!userName.trim() || !userPhone.trim() || !itemName.trim() || !itemPrice || Number(itemPrice) <= 0) {
-      alert('Please fill in your name, phone number, item name, and item price.');
-      return;
-    }
-
-    const priceNum = Number(itemPrice);
-
-    if (onJoinPool) {
-      setIsJoining(true);
-      try {
-        await onJoinPool(pool.id, userName.trim(), userPhone.trim(), itemName.trim(), priceNum);
-        setItemName('');
-        setItemPrice('');
-        setNotes('');
-
-        if (onAddChatMessage) {
-          onAddChatMessage(pool.id, {
-            id: `chat-${Date.now()}`,
-            sender: userName.trim(),
-            text: `Joined pool with "${itemName.trim()}" (₹${priceNum})!`,
-            time: 'Just now',
-          });
-        }
-      } catch (err: any) {
-        setJoinError(err.message || 'Failed to join pool');
-      } finally {
-        setIsJoining(false);
-      }
-    } else {
-      const avatarSeed = userName.trim().replace(/\s+/g, '');
-      onAddItemToPool(pool.id, {
-        addedBy: userName.trim(),
-        addedByAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
-        itemName: itemName.trim(),
-        price: priceNum,
-        quantity: 1,
-        isHost: false,
-        notes: notes.trim(),
-        hasPaid: false,
-        memberPhone: userPhone.trim(),
-      });
-      setItemName('');
-      setItemPrice('');
-      setNotes('');
-    }
-  };
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,7 +268,13 @@ const remaining =
 
           <div className="bg-[#f5f5f7] p-4 rounded-2xl border border-black/[0.04] space-y-2"><div className="flex justify-between items-center text-xs font-semibold"><span className="text-slate-600">Cart Total: <span className="text-[#1d1d1f] font-extrabold text-sm">₹{totalPooledAmount}</span> / ₹{pool.targetThreshold}</span><span className={percentage >= 100 ? 'text-emerald-700 font-bold' : 'text-slate-700'}>{percentage >= 100 ? 'Free Delivery Unlocked 🎉' : `Need ₹${remaining} more`}</span></div><div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-300 ${percentage >= 100 ? 'bg-emerald-600' : 'bg-[#1d1d1f]'}`} style={{ width: `${percentage}%` }} /></div><div className="flex justify-between text-[11px] text-slate-500 font-medium pt-0.5"><span>Host Phone: <strong>{pool.hostPhone || '+91 98765 43210'}</strong></span><span className="text-emerald-700 font-semibold">Saves ₹{savedDeliveryFee} delivery fee</span></div></div>
 
-          <form onSubmit={handleAddItem} className="bg-[#f5f5f7] p-4 rounded-2xl border border-black/[0.04] space-y-3"><div className="text-xs font-bold text-[#1d1d1f] flex items-center justify-between"><span>Join Pool / Add Your Item</span><span className="text-[10px] text-slate-500 font-normal">Requires Phone Number</span></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><input type="text" required placeholder="Your name *" value={userName} onChange={(e) => setUserName(e.target.value)} className="bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none" /><input type="tel" required placeholder="Phone number * (e.g. 9876543210)" value={userPhone} onChange={(e) => setUserPhone(e.target.value)} className="bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none" /></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-2"><input type="text" required placeholder="Item name *" value={itemName} onChange={(e) => setItemName(e.target.value)} className="sm:col-span-2 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none" /><div className="relative"><span className="absolute left-3 top-2 text-slate-400 text-xs">₹</span><input type="number" min="1" required placeholder="Price *" value={itemPrice} onChange={(e) => setItemPrice(e.target.value === '' ? '' : Number(e.target.value))} className="w-full pl-6 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none" /></div></div><div className="flex gap-2"><input type="text" placeholder="Notes for host (optional e.g. preference, size)" value={notes} onChange={(e) => setNotes(e.target.value)} className="flex-grow bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none" /><button type="submit" disabled={isJoining} className="bg-[#1d1d1f] hover:bg-black disabled:bg-slate-400 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 transition-colors">{isJoining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 stroke-[2.5]" />}<span>{isJoining ? 'Joining...' : 'Join Pool'}</span></button></div>{joinError && <div className="bg-rose-50 border border-rose-200 text-rose-800 p-2.5 rounded-xl text-xs flex items-center gap-2"><AlertCircle className="w-4 h-4 text-rose-600 shrink-0" /><span>{joinError}</span></div>}</form>
+          <JoinPoolForm
+  poolId={pool.id}
+  onJoinPool={onJoinPool}
+  onAddItemToPool={onAddItemToPool}
+  onAddChatMessage={onAddChatMessage}
+  onUserNameChange={handleUserNameChange}
+/>
 
           <div className="space-y-2"><h4 className="text-xs font-semibold text-slate-500">Cart Items ({pool.items.length})</h4><div className="space-y-2">{pool.items.map((item) => <div key={item.id} className="bg-white p-3 rounded-2xl border border-black/[0.06] flex items-center justify-between text-xs shadow-2xs"><div className="flex items-center gap-2.5"><img src={item.addedByAvatar} alt={item.addedBy} className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 shrink-0" /><div><div className="font-semibold text-[#1d1d1f] flex items-center gap-1.5"><span>{item.itemName}</span>{item.isHost && <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-medium">Host</span>}<span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${item.hasPaid ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' : 'bg-amber-100 text-amber-900 border border-amber-200'}`}>{item.hasPaid ? 'Paid 🟢' : 'Unpaid 🔴'}</span></div><div className="text-[11px] text-slate-500">Added by <strong>{item.addedBy.replace(/\s*\(Host\)/gi, '')}</strong>{item.notes && <span className="italic ml-1">({item.notes})</span>}</div></div></div><div className="flex items-center gap-3"><span className="font-extrabold text-[#1d1d1f] text-xs">₹{item.price * item.quantity}</span>{!item.isHost && <div className="flex items-center gap-1.5">{onLeavePool && <button type="button" onClick={() => { const targetPhone = prompt(`Enter phone number for ${item.addedBy} to leave pool:`, item.memberPhone || userPhone || ''); if (targetPhone && targetPhone.trim()) onLeavePool(pool.id, targetPhone.trim()).catch((err) => alert(err.message || 'Failed to leave pool')); }} className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-lg transition-colors flex items-center gap-1" title="Leave Pool (POST /leave)"><LogOut className="w-3 h-3" /><span>Leave</span></button>}<button type="button" onClick={() => onRemoveItemFromPool(pool.id, item.id)} className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-slate-100 transition-colors" title="Remove item"><Trash2 className="w-3.5 h-3.5" /></button></div>}</div></div>)}</div></div>
 
