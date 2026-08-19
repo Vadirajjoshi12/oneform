@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import { PoolItem } from '../types';
 import { Plus, Loader2, AlertCircle } from 'lucide-react';
 
@@ -25,7 +25,6 @@ interface JoinPoolFormProps {
       isHost?: boolean;
     }
   ) => void;
-  onUserNameChange?: (name: string) => void;
 }
 
 export const JoinPoolForm = memo(function JoinPoolForm({
@@ -33,39 +32,41 @@ export const JoinPoolForm = memo(function JoinPoolForm({
   onJoinPool,
   onAddItemToPool,
   onAddChatMessage,
-  onUserNameChange,
 }: JoinPoolFormProps) {
-  const [userName, setUserName] = useState('');
-  const [userPhone, setUserPhone] = useState('');
-  const [itemName, setItemName] = useState('');
-  const [itemPrice, setItemPrice] = useState<number | ''>('');
-  const [notes, setNotes] = useState('');
+  /*
+   * IMPORTANT:
+   * These are refs instead of React state.
+   *
+   * Typing therefore does NOT cause React to render.
+   * The browser updates the input immediately.
+   */
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const itemNameRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLInputElement>(null);
 
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-
-  const handleUserNameChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.value;
-    setUserName(value);
-
-    // Important:
-    // Update parent's ref only.
-    // This does NOT cause the parent modal to re-render.
-    onUserNameChange?.(value);
-  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     setJoinError(null);
 
+    const userName = nameRef.current?.value.trim() || '';
+    const userPhone = phoneRef.current?.value.trim() || '';
+    const itemName = itemNameRef.current?.value.trim() || '';
+    const priceText = priceRef.current?.value || '';
+    const notes = notesRef.current?.value.trim() || '';
+
+    const price = Number(priceText);
+
     if (
-      !userName.trim() ||
-      !userPhone.trim() ||
-      !itemName.trim() ||
-      !itemPrice ||
-      Number(itemPrice) <= 0
+      !userName ||
+      !userPhone ||
+      !itemName ||
+      !priceText ||
+      price <= 0
     ) {
       setJoinError(
         'Please fill in your name, phone number, item name, and item price.'
@@ -73,31 +74,38 @@ export const JoinPoolForm = memo(function JoinPoolForm({
       return;
     }
 
-    const priceNum = Number(itemPrice);
-
     if (onJoinPool) {
       setIsJoining(true);
 
       try {
         await onJoinPool(
           poolId,
-          userName.trim(),
-          userPhone.trim(),
-          itemName.trim(),
-          priceNum
+          userName,
+          userPhone,
+          itemName,
+          price
         );
 
-        const joinedItemName = itemName.trim();
+        /*
+         * Clear only after successful join.
+         */
+        if (itemNameRef.current) {
+          itemNameRef.current.value = '';
+        }
 
-        setItemName('');
-        setItemPrice('');
-        setNotes('');
+        if (priceRef.current) {
+          priceRef.current.value = '';
+        }
+
+        if (notesRef.current) {
+          notesRef.current.value = '';
+        }
 
         if (onAddChatMessage) {
           onAddChatMessage(poolId, {
             id: `chat-${Date.now()}`,
-            sender: userName.trim(),
-            text: `Joined pool with "${joinedItemName}" (₹${priceNum})!`,
+            sender: userName,
+            text: `Joined pool with "${itemName}" (₹${price})!`,
             time: 'Just now',
           });
         }
@@ -109,25 +117,32 @@ export const JoinPoolForm = memo(function JoinPoolForm({
         setIsJoining(false);
       }
     } else {
-      const avatarSeed = userName
-        .trim()
-        .replace(/\s+/g, '');
+      const avatarSeed = userName.replace(/\s+/g, '');
 
       onAddItemToPool(poolId, {
-        addedBy: userName.trim(),
-        addedByAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
-        itemName: itemName.trim(),
-        price: priceNum,
+        addedBy: userName,
+        addedByAvatar:
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
+        itemName,
+        price,
         quantity: 1,
         isHost: false,
-        notes: notes.trim(),
+        notes,
         hasPaid: false,
-        memberPhone: userPhone.trim(),
+        memberPhone: userPhone,
       });
 
-      setItemName('');
-      setItemPrice('');
-      setNotes('');
+      if (itemNameRef.current) {
+        itemNameRef.current.value = '';
+      }
+
+      if (priceRef.current) {
+        priceRef.current.value = '';
+      }
+
+      if (notesRef.current) {
+        notesRef.current.value = '';
+      }
     }
   };
 
@@ -146,31 +161,28 @@ export const JoinPoolForm = memo(function JoinPoolForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <input
+          ref={nameRef}
           type="text"
           required
           placeholder="Your name *"
-          value={userName}
-          onChange={handleUserNameChange}
           className="bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
         />
 
         <input
+          ref={phoneRef}
           type="tel"
           required
           placeholder="Phone number * (e.g. 9876543210)"
-          value={userPhone}
-          onChange={(e) => setUserPhone(e.target.value)}
           className="bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <input
+          ref={itemNameRef}
           type="text"
           required
           placeholder="Item name *"
-          value={itemName}
-          onChange={(e) => setItemName(e.target.value)}
           className="sm:col-span-2 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
         />
 
@@ -180,18 +192,11 @@ export const JoinPoolForm = memo(function JoinPoolForm({
           </span>
 
           <input
+            ref={priceRef}
             type="number"
             min="1"
             required
             placeholder="Price *"
-            value={itemPrice}
-            onChange={(e) =>
-              setItemPrice(
-                e.target.value === ''
-                  ? ''
-                  : Number(e.target.value)
-              )
-            }
             className="w-full pl-6 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
           />
         </div>
@@ -199,10 +204,9 @@ export const JoinPoolForm = memo(function JoinPoolForm({
 
       <div className="flex gap-2">
         <input
+          ref={notesRef}
           type="text"
           placeholder="Notes for host (optional e.g. preference, size)"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
           className="flex-grow bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
         />
 
