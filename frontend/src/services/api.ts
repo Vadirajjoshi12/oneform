@@ -90,8 +90,6 @@ export async function getNearbyPools(lat: number, lng: number, radius = 2): Prom
   try { return await promise; } catch (error) { if (nearbyRequestCache.get(key)?.promise === promise) nearbyRequestCache.delete(key); throw error; }
 }
 
-// The open-pool modal polls details every few seconds. Cache identical GETs briefly
-// so React re-renders and polling cannot hammer the backend with duplicate requests.
 const poolDetailsCache = new Map<string, { promise: Promise<ApiResponse<BackendPoolData>>; timestamp: number }>();
 const POOL_DETAILS_CACHE_MS = 8000;
 
@@ -133,6 +131,6 @@ export async function placeOrder(poolId: string, phone: string): Promise<ApiResp
 }
 
 export async function updateDeliveryStatus(poolId: string, phone: string, deliveryStatus: string): Promise<ApiResponse> {
-  const result = await request<ApiResponse>(`${API_BASE_URL}/api/pools/${poolId}/delivery-status`, { method: 'POST', headers: getHostAuthHeaders(poolId), body: JSON.stringify({ phone, deliveryStatus }));
+  const result = await request<ApiResponse>(`${API_BASE_URL}/api/pools/${poolId}/delivery-status`, { method: 'POST', headers: getHostAuthHeaders(poolId), body: JSON.stringify({ phone, deliveryStatus }) });
   invalidatePoolDetailsCache(poolId); return result;
 }
