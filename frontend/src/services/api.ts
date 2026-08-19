@@ -11,19 +11,36 @@ import {
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'https://oneform-2.onrender.com';
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  let json: any;
+  let json: any = null;
+
   try {
     json = await res.json();
-  } catch (err) {
-    throw new Error(`Network response error (${res.status} ${res.statusText})`);
+  } catch {
+    throw new Error(
+      res.ok
+        ? 'The server returned an invalid response. Please try again.'
+        : `Server error (${res.status}). Please try again.`
+    );
   }
 
-  if (!res.ok || json.success === false) {
-    const errorMsg = json.message || json.error || `Request failed with status ${res.status}`;
+  if (!res.ok || json?.success === false) {
+    const errorMsg = json?.message || json?.error || `Request failed with status ${res.status}`;
     throw new Error(errorMsg);
   }
 
   return json as T;
+}
+
+async function request<T>(url: string, options?: RequestInit): Promise<T> {
+  try {
+    const response = await fetch(url, options);
+    return await handleResponse<T>(response);
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      throw new Error('Unable to connect to 1FORM server. Please check your internet connection or try again in a moment.');
+    }
+    throw error;
+  }
 }
 
 export function mapBackendPoolToOrderPool(
@@ -60,10 +77,7 @@ export function mapBackendPoolToOrderPool(
   }
 
   const poolTotal = backendData.poolTotal ?? existingLocalPool?.currentAmount ?? 0;
-  const targetThreshold =
-  backendData.targetThreshold ??
-  existingLocalPool?.targetThreshold ??
-  0;
+  const targetThreshold = backendData.targetThreshold ?? existingLocalPool?.targetThreshold ?? 0;
   const remainingAmount = backendData.remainingAmount ?? Math.max(targetThreshold - poolTotal, 0);
 
   let rawPlatform = (backendData.platform || existingLocalPool?.platform || 'Zepto') as QuickCommercePlatform;
@@ -107,82 +121,67 @@ export function mapBackendPoolToOrderPool(
 }
 
 export async function createPool(payload: CreatePoolPayload): Promise<ApiResponse<BackendPoolData>> {
-  const response = await fetch(`${API_BASE_URL}/api/pools/create`, {
+  return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  return handleResponse<ApiResponse<BackendPoolData>>(response);
 }
 
 export async function getNearbyPools(lat: number, lng: number, radius = 2): Promise<ApiResponse<BackendPoolData[]>> {
-  const url = `${API_BASE_URL}/api/pools/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
-  const response = await fetch(url, {
+  return request<ApiResponse<BackendPoolData[]>>(`${API_BASE_URL}/api/pools/nearby?lat=${lat}&lng=${lng}&radius=${radius}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   });
-  return handleResponse<ApiResponse<BackendPoolData[]>>(response);
 }
 
 export async function getPoolDetails(poolId: string): Promise<ApiResponse<BackendPoolData>> {
-  const response = await fetch(`${API_BASE_URL}/api/pools/${poolId}`, {
+  return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   });
-  return handleResponse<ApiResponse<BackendPoolData>>(response);
 }
 
 export async function joinPool(poolId: string, payload: JoinPoolPayload): Promise<ApiResponse<BackendPoolData>> {
-  const response = await fetch(`${API_BASE_URL}/api/pools/${poolId}/join`, {
+  return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  return handleResponse<ApiResponse<BackendPoolData>>(response);
 }
 
 export async function leavePool(poolId: string, phone: string): Promise<ApiResponse<BackendPoolData>> {
-  const response = await fetch(`${API_BASE_URL}/api/pools/${poolId}/leave`, {
+  return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}/leave`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
   });
-  return handleResponse<ApiResponse<BackendPoolData>>(response);
 }
 
 export async function cancelPool(poolId: string, phone: string): Promise<ApiResponse<BackendPoolData>> {
-  const response = await fetch(`${API_BASE_URL}/api/pools/${poolId}/cancel`, {
+  return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}/cancel`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
   });
-  return handleResponse<ApiResponse<BackendPoolData>>(response);
 }
 
 export async function placeOrder(poolId: string, phone: string): Promise<ApiResponse<BackendPoolData>> {
-  const response = await fetch(`${API_BASE_URL}/api/pools/${poolId}/order`, {
+  return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}/order`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
   });
-  return handleResponse<ApiResponse<BackendPoolData>>(response);
 }
+
 export async function updateDeliveryStatus(
   poolId: string,
   phone: string,
   deliveryStatus: string
 ): Promise<ApiResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/pools/${poolId}/delivery-status`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone,
-        deliveryStatus,
-      }),
-    }
-  );
-
-  return handleResponse<ApiResponse>(response);
+  return request<ApiResponse>(`${API_BASE_URL}/api/pools/${poolId}/delivery-status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, deliveryStatus }),
+  });
 }
