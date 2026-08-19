@@ -9,17 +9,28 @@ export const createPool = async (
   res: Response
 ) => {
   try {
-        const existingPool = await Pool.findOne({
-  status: "active",
-  "members.phone": req.body.host.phone,
-  "members.isHost": true,
-});
-if (existingPool) {
-  return res.status(409).json({
-    success: false,
-    message: "You already have an active pool.",
-  });
-}
+    const existingPool = await Pool.findOne({
+      status: "active",
+      "members.phone": req.body.host.phone,
+      "members.isHost": true,
+    });
+
+    if (existingPool) {
+      const isExpired =
+        new Date(existingPool.expiresAt).getTime() <= Date.now();
+
+      if (isExpired) {
+        existingPool.status = "expired";
+        existingPool.deliveryStatus = "Expired";
+        await existingPool.save();
+      } else {
+        return res.status(409).json({
+          success: false,
+          message: "You already have an active pool.",
+        });
+      }
+    }
+
     // Build secure pool object
     const poolData = buildPool(req.body);
 
@@ -33,11 +44,11 @@ if (existingPool) {
     );
 
     return res.status(201).json({
-  success: true,
-  message: "Pool created successfully",
-  hostToken,
-  data: publicPoolDTO(pool),
-});
+      success: true,
+      message: "Pool created successfully",
+      hostToken,
+      data: publicPoolDTO(pool),
+    });
 
   } catch (error) {
 
