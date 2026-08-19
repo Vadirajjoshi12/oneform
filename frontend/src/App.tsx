@@ -327,32 +327,44 @@ const handleUpdateDeliveryStatus = async (
     return;
   }
 
-  try {
+  const hostPhone =
+    pool.hostPhone ||
+    pool.members?.find((member) => member.isHost)?.phone ||
+    '';
 
-    // Update backend first
+  if (!hostPhone) {
+    setToastMessage(
+      'Host phone number is missing. Please refresh the pool.'
+    );
+    console.error('Host phone missing:', pool);
+    return;
+  }
+
+  try {
     const res = await api.updateDeliveryStatus(
       poolId,
-      pool.hostPhone,
+      hostPhone,
       deliveryStatus
     );
-    if (res.data) {
-      const existing = pools.find((p) => p.id === poolId);
 
-      // Convert backend response into frontend pool format
-      const updatedPool = api.mapBackendPoolToOrderPool(
-        res.data,
-        activeCommunity.name,
-        existing
+    if (res.data) {
+      const existing = pools.find(
+        (p) => p.id === poolId
       );
 
-      // Update pools list
+      const updatedPool =
+        api.mapBackendPoolToOrderPool(
+          res.data,
+          activeCommunity.name,
+          existing
+        );
+
       setPools((prevPools) =>
         prevPools.map((p) =>
           p.id === poolId ? updatedPool : p
         )
       );
 
-      // Update currently open modal
       setSelectedPoolForDetail((prev) => {
         if (prev?.id === poolId) {
           return updatedPool;
@@ -362,12 +374,18 @@ const handleUpdateDeliveryStatus = async (
       });
 
       setToastMessage(
-        `🛵 Order delivery status updated to: ${deliveryStatus}`
+        `Delivery status updated to ${deliveryStatus}`
       );
     }
   } catch (error: any) {
+    console.error(
+      'Delivery status update failed:',
+      error
+    );
+
     setToastMessage(
-      error.message || 'Failed to update delivery status'
+      error.message ||
+        'Failed to update delivery status'
     );
   }
 };
