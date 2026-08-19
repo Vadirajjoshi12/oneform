@@ -10,52 +10,46 @@ interface OrderPoolCardProps {
 
 export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool }) => {
   const platform = PLATFORMS.find((p) => p.id === pool.platform) || PLATFORMS[0];
-  
-  // Calculate threshold progress
-  const percentage = Math.min(Math.round((pool.currentAmount / pool.targetThreshold) * 100), 100);
+
+  const percentage = pool.targetThreshold > 0
+    ? Math.min(Math.round((pool.currentAmount / pool.targetThreshold) * 100), 100)
+    : 0;
   const remainingAmount = Math.max(pool.targetThreshold - pool.currentAmount, 0);
 
-  // Timer calculation
+  // Use the backend's absolute expiry timestamp so every device sees the same countdown.
   const [timeLeft, setTimeLeft] = useState<string>('00:00');
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const updateTimer = () => {
-      const now = new Date().getTime();
       const expiry = new Date(pool.expiresAt).getTime();
-      const diff = expiry - now;
+      const diff = expiry - Date.now();
 
-      if (diff <= 0) {
+      if (!Number.isFinite(expiry) || diff <= 0) {
         setTimeLeft('00:00');
         setIsExpired(true);
-      } else {
-        const mins = Math.floor(diff / (1000 * 60));
-        const secs = Math.floor((diff % (1000 * 60)) / 1000);
-        const minsStr = mins < 10 ? `0${mins}` : `${mins}`;
-        const secsStr = secs < 10 ? `0${secs}` : `${secs}`;
-        setTimeLeft(`${minsStr}:${secsStr}`);
-        setIsExpired(false);
+        return;
       }
+
+      const mins = Math.floor(diff / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+      setIsExpired(false);
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
+    const interval = window.setInterval(updateTimer, 1000);
+    return () => window.clearInterval(interval);
   }, [pool.expiresAt]);
 
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-black/[0.08] hover:border-black/20 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between group">
-      
-      {/* Card Body */}
       <div className="p-5 sm:p-6 space-y-4">
-        
-        {/* Top Header: Platform + Optional Non-Default Status & Countdown Timer */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-black text-[#1d1d1f] tracking-wider uppercase">
               {pool.platform}
             </span>
-            {/* Show status tag ONLY if not the default "Cart Open" */}
             {pool.deliveryStatus && pool.deliveryStatus !== 'Cart Open' && (
               <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
                 pool.deliveryStatus === 'Arrived at Gate' || pool.deliveryStatus === 'Completed'
@@ -73,7 +67,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
             )}
           </div>
 
-          {/* Monospaced Countdown Timer */}
           <div className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border backdrop-blur-sm ${
             isExpired
               ? 'bg-rose-500/10 text-rose-800 border-rose-200/80'
@@ -84,7 +77,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
           </div>
         </div>
 
-        {/* Pickup Location & Host Information */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -100,7 +92,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
             <span className="text-xs font-semibold text-slate-700 tracking-tight">
               {pool.hostName} <span className="text-[10px] text-slate-400 font-normal">(Host)</span>
             </span>
-            {/* Inline Host Note Micro-copy if present */}
             {pool.note && (
               <span className="text-xs text-slate-500 font-normal italic truncate max-w-[180px]">
                 • "{pool.note}"
@@ -109,7 +100,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
           </div>
         </div>
 
-        {/* Cart Threshold Progress Bar & Actionable Goal */}
         <div className="space-y-2 pt-1">
           <div className="flex justify-between items-center text-xs">
             <span className="font-extrabold text-[#1d1d1f]">
@@ -127,7 +117,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
             </span>
           </div>
 
-          {/* Apple System Tinted Progress Bar */}
           <div className="w-full h-2 bg-black/[0.05] rounded-full overflow-hidden p-0.5">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
@@ -140,7 +129,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
           </div>
         </div>
 
-        {/* Participants & Savings Badge */}
         <div className="flex items-center justify-between border-t border-black/[0.06] pt-3">
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1.5 overflow-hidden">
@@ -163,10 +151,8 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
             Saves ₹{platform.defaultDeliveryFee} fee
           </span>
         </div>
-
       </div>
 
-      {/* Integrated Primary Action Capsule Button */}
       <div className="p-3.5 bg-black/[0.02] border-t border-black/[0.06]">
         <button
           onClick={() => onSelectPool(pool)}
@@ -179,9 +165,6 @@ export const OrderPoolCard: React.FC<OrderPoolCardProps> = ({ pool, onSelectPool
           <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
-
     </div>
   );
 };
-
-
