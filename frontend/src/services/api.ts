@@ -128,11 +128,45 @@ export async function createPool(payload: CreatePoolPayload): Promise<ApiRespons
   });
 }
 
+// Nearby-location requests can be triggered repeatedly by tiny GPS coordinate changes.
+// Round coordinates to ~11m precision and reuse the same in-flight/successful request
+// briefly so location jitter cannot create a burst of identical API calls.
+const nearbyRequestCache = new Map<
+  string,
+  { promise: Promise<ApiResponse<BackendPoolData[]>>; timestamp: number }
+>();
+const NEARBY_REQUEST_CACHE_MS = 5000;
+
 export async function getNearbyPools(lat: number, lng: number, radius = 2): Promise<ApiResponse<BackendPoolData[]>> {
-  return request<ApiResponse<BackendPoolData[]>>(`${API_BASE_URL}/api/pools/nearby?lat=${lat}&lng=${lng}&radius=${radius}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const roundedLat = Number(lat.toFixed(4));
+  const roundedLng = Number(lng.toFixed(4));
+  const key = `${roundedLat}:${roundedLng}:${radius}`;
+  const now = Date.now();
+  const cached = nearbyRequestCache.get(key);
+
+  if (cached && now - cached.timestamp < NEARBY_REQUEST_CACHE_MS) {
+    return cached.promise;
+  }
+
+  const promise = request<ApiResponse<BackendPoolData[]>>(
+    `${API_BASE_URL}/api/pools/nearby?lat=${roundedLat}&lng=${roundedLng}&radius=${radius}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+
+  nearbyRequestCache.set(key, { promise, timestamp: now });
+
+  try {
+    return await promise;
+  } catch (error) {
+    // Do not keep failed/rate-limited requests cached.
+    if (nearbyRequestCache.get(key)?.promise === promise) {
+      nearbyRequestCache.delete(key);
+    }
+    throw error;
+  }
 }
 
 export async function getPoolDetails(poolId: string): Promise<ApiResponse<BackendPoolData>> {
