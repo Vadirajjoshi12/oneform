@@ -91,15 +91,20 @@ export async function getNearbyPools(lat: number, lng: number, radius = 2): Prom
 }
 
 const poolDetailsCache = new Map<string, { promise: Promise<ApiResponse<BackendPoolData>>; timestamp: number }>();
-const POOL_DETAILS_CACHE_MS = 8000;
-
-export async function getPoolDetails(poolId: string): Promise<ApiResponse<BackendPoolData>> {
-  const cached = poolDetailsCache.get(poolId);
-  if (cached && Date.now() - cached.timestamp < POOL_DETAILS_CACHE_MS) return cached.promise;
-
-  const promise = request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
-  poolDetailsCache.set(poolId, { promise, timestamp: Date.now() });
-  try { return await promise; } catch (error) { if (poolDetailsCache.get(poolId)?.promise === promise) poolDetailsCache.delete(poolId); throw error; }
+export async function getPoolDetails(
+  poolId: string
+): Promise<ApiResponse<BackendPoolData>> {
+  return request<ApiResponse<BackendPoolData>>(
+    `${API_BASE_URL}/api/pools/${poolId}?t=${Date.now()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    }
+  );
 }
 
 function invalidatePoolDetailsCache(poolId: string) { poolDetailsCache.delete(poolId); }
