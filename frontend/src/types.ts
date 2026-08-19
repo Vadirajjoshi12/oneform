@@ -26,14 +26,14 @@ export interface ChatMessage {
 export interface PlatformConfig {
   id: QuickCommercePlatform;
   name: string;
-  color: string; // Tailwind hex or class color
+  color: string;
   bgLight: string;
   badgeBg: string;
   textColor: string;
   defaultDeliveryFee: number;
   handlingFee: number;
   freeDeliveryThreshold: number;
-  logoIcon: string; // Lucide icon or emoji / icon name
+  logoIcon: string;
 }
 
 export interface PoolItem {
@@ -77,6 +77,7 @@ export interface BackendPoolData {
   poolTotal: number;
   remainingAmount: number;
   timeLeftMinutes: number;
+  expiresAt?: string;
   status: PoolStatus;
   deliveryStatus: DeliveryStatus;
   note?: string;
@@ -92,13 +93,13 @@ export interface OrderPool {
   hostPhone: string;
   hostAvatar: string;
   platform: QuickCommercePlatform;
-  pickupLocation: string; // e.g. "Hostel 4 Main Gate Reception"
+  pickupLocation: string;
   targetThreshold: number;
   currentAmount: number;
   remainingAmount?: number;
   memberCount?: number;
   timeLeftMinutes?: number;
-  expiresAt: string; // ISO timestamp or remaining minutes
+  expiresAt: string;
   status: PoolStatus;
   deliveryStatus?: DeliveryStatus;
   hostPin?: string;
@@ -158,7 +159,7 @@ export interface Community {
   location: string;
   lat: number;
   lng: number;
-  radiusKm?: number; // Maximum allowed distance to create/join pools (default 2.0 km)
+  radiusKm?: number;
   memberCount: number;
   totalSaved: number;
   activePoolsCount: number;
@@ -169,7 +170,7 @@ export interface UserLocationState {
   coords: { lat: number; lng: number } | null;
   status: 'idle' | 'locating' | 'granted' | 'denied' | 'unsupported';
   error: string | null;
-  accuracy?: number; // accuracy in meters
+  accuracy?: number;
   updatedAt?: number;
   isSimulated?: boolean;
 }
@@ -177,7 +178,7 @@ export interface UserLocationState {
 export interface FeedbackComment {
   id: string;
   authorName: string;
-  authorRole: string; // e.g. "Hostel 7 Resident", "PG Owner - Koramangala"
+  authorRole: string;
   avatar: string;
   comment: string;
   upvotes: number;
