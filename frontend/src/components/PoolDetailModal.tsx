@@ -103,7 +103,7 @@ export const PoolDetailModal: React.FC<PoolDetailModalProps> = ({
     };
 
     refresh();
-    const intervalId = window.setInterval(refresh, 8000);
+    const intervalId = window.setInterval(refresh, 3000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') refresh();
