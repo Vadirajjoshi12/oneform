@@ -1,0 +1,80 @@
+name: Batch 4 - live pool sync
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch-live-sync:
+    if: ${{ !contains(github.event.head_commit.message, 'Batch 4: live pool sync') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add live pool status polling
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("frontend/src/App.tsx")
+          text = path.read_text()
+
+          marker = "  const handleJoinPoolBackend = async (poolId: string, name: string, phone: string, itemName: string, price: number) => {"
+          if marker not in text:
+              raise SystemExit("Could not find insertion marker in App.tsx")
+
+          if "// Live sync: refresh the selected pool" in text:
+              print("Live sync already present; nothing to do.")
+              raise SystemExit(0)
+
+          insertion = '''  // Live sync: refresh the selected pool from the backend so every device sees delivery updates.
+  useEffect(() => {
+    const poolId = selectedPoolForDetail?.id;
+
+    if (!poolId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshSelectedPool = async () => {
+      if (cancelled) {
+        return;
+      }
+
+      try {
+        await handleRefreshPoolDetails(poolId);
+      } catch (err) {
+        console.warn('Live pool sync failed:', err);
+      }
+    };
+
+    // Refresh immediately, then keep the open pool synchronized every 3 seconds.
+    refreshSelectedPool();
+    const intervalId = window.setInterval(refreshSelectedPool, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [selectedPoolForDetail?.id, activeCommunity.name]);
+
+'''
+
+          path.write_text(text.replace(marker, insertion + marker, 1))
+          print("Added Batch 4 live pool synchronization to App.tsx")
+
+      - name: Commit live sync patch and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/batch4-live-sync.yml
+          git add frontend/src/App.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Batch 4: live pool sync"
+          git push
