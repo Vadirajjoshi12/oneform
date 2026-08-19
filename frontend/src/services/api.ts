@@ -99,7 +99,7 @@ export function mapBackendPoolToOrderPool(
     remainingAmount,
     memberCount: backendData.memberCount ?? backendData.members?.length ?? 1,
     timeLeftMinutes: backendData.timeLeftMinutes ?? 30,
-    expiresAt: existingLocalPool?.expiresAt || new Date(Date.now() + (backendData.timeLeftMinutes || 30) * 60000).toISOString(),
+    expiresAt: backendData.expiresAt || existingLocalPool?.expiresAt || new Date(Date.now() + (backendData.timeLeftMinutes || 30) * 60000).toISOString(),
     status: backendData.status || 'active',
     deliveryStatus: backendData.deliveryStatus || 'Cart Open',
     hostPin: existingLocalPool?.hostPin || '1234',
