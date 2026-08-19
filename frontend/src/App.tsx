@@ -320,7 +320,10 @@ const handleUpdateDeliveryStatus = async (
   poolId: string,
   deliveryStatus: DeliveryStatus
 ) => {
-  const pool = pools.find((p) => p.id === poolId);
+  const pool =
+  selectedPoolForDetail?.id === poolId
+    ? selectedPoolForDetail
+    : pools.find((p) => p.id === poolId);
 
   if (!pool) {
     setToastMessage('Pool not found');
