@@ -124,6 +124,11 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       newPool.hostPin = hostPin.trim() || '1234';
       if (response.hostToken) {
         newPool.hostToken = response.hostToken;
+
+        localStorage.setItem(
+          `oneform_host_token_${newPool.id}`,
+          response.hostToken
+        );
       }
 
       onCreatePool(newPool);

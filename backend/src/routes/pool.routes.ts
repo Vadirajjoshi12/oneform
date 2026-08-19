@@ -8,6 +8,7 @@ import {
 } from "../controllers/pool.controller";
 import { validate } from "../middleware/validate";
 import { createPoolValidator } from "../validators/pool.validator";
+import { requireHostToken } from "../middleware/host-auth";
 
 const router = Router();
 
@@ -23,14 +24,17 @@ router.get(
 );
 router.post(
   "/:poolId/cancel",
+  requireHostToken,
   cancelPool
 );
 router.post(
   "/:poolId/order",
+  requireHostToken,
   placeOrder
 );
 router.post(
   "/:poolId/delivery-status",
+  requireHostToken,
   updateDeliveryStatus
 );
 

@@ -158,10 +158,23 @@ export async function leavePool(poolId: string, phone: string): Promise<ApiRespo
   });
 }
 
+function getHostAuthHeaders(poolId: string): Record<string, string> {
+  const token = localStorage.getItem(`oneform_host_token_${poolId}`);
+
+  if (!token) {
+    throw new Error('Host authorization is missing. Please reopen the pool you created.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+}
+
 export async function cancelPool(poolId: string, phone: string): Promise<ApiResponse<BackendPoolData>> {
   return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}/cancel`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHostAuthHeaders(poolId),
     body: JSON.stringify({ phone }),
   });
 }
@@ -169,7 +182,7 @@ export async function cancelPool(poolId: string, phone: string): Promise<ApiResp
 export async function placeOrder(poolId: string, phone: string): Promise<ApiResponse<BackendPoolData>> {
   return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/${poolId}/order`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHostAuthHeaders(poolId),
     body: JSON.stringify({ phone }),
   });
 }
@@ -181,7 +194,7 @@ export async function updateDeliveryStatus(
 ): Promise<ApiResponse> {
   return request<ApiResponse>(`${API_BASE_URL}/api/pools/${poolId}/delivery-status`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHostAuthHeaders(poolId),
     body: JSON.stringify({ phone, deliveryStatus }),
   });
 }
