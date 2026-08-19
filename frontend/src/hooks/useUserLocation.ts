@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserLocationState, Community } from '../types';
 import { calculateDistanceInKm, isWithinGeofence } from '../utils/location';
+
+const MIN_LOCATION_UPDATE_DISTANCE_KM = 0.05; // 50 metres
+const MIN_LOCATION_UPDATE_INTERVAL_MS = 15000; // 15 seconds
 
 export function useUserLocation() {
   const [locationState, setLocationState] = useState<UserLocationState>({
@@ -10,6 +13,57 @@ export function useUserLocation() {
     isSimulated: false,
   });
 
+  // Prevent tiny GPS movements from causing the entire app
+  // to re-render repeatedly.
+  const lastAppliedLocationRef = useRef<{
+    lat: number;
+    lng: number;
+    at: number;
+  } | null>(null);
+
+  const applyLocation = useCallback((position: GeolocationPosition) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const now = Date.now();
+
+    const previous = lastAppliedLocationRef.current;
+
+    if (previous) {
+      const movedKm = calculateDistanceInKm(
+        previous.lat,
+        previous.lng,
+        lat,
+        lng
+      );
+
+      // Ignore tiny GPS jitter when the user hasn't moved meaningfully.
+      if (
+        movedKm < MIN_LOCATION_UPDATE_DISTANCE_KM &&
+        now - previous.at < MIN_LOCATION_UPDATE_INTERVAL_MS
+      ) {
+        return;
+      }
+    }
+
+    lastAppliedLocationRef.current = {
+      lat,
+      lng,
+      at: now,
+    };
+
+    setLocationState({
+      coords: {
+        lat,
+        lng,
+      },
+      status: 'granted',
+      error: null,
+      accuracy: position.coords.accuracy,
+      updatedAt: now,
+      isSimulated: false,
+    });
+  }, []);
+
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setLocationState({
@@ -18,33 +72,32 @@ export function useUserLocation() {
         error: 'Geolocation is not supported by your browser.',
         isSimulated: false,
       });
+
       return;
     }
 
-    setLocationState((prev) => ({ ...prev, status: 'locating', error: null }));
+    setLocationState((prev) => ({
+      ...prev,
+      status: 'locating',
+      error: null,
+    }));
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocationState({
-          coords: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
-          status: 'granted',
-          error: null,
-          accuracy: position.coords.accuracy,
-          updatedAt: Date.now(),
-          isSimulated: false,
-        });
+        applyLocation(position);
       },
       (error) => {
         let errorMsg = 'Failed to retrieve your current location.';
+
         if (error.code === error.PERMISSION_DENIED) {
-          errorMsg = 'Location permission denied. Please enable location access in your browser to create or join order pools at your physical location.';
+          errorMsg =
+            'Location permission denied. Please enable location access in your browser to create or join order pools at your physical location.';
         } else if (error.code === error.POSITION_UNAVAILABLE) {
-          errorMsg = 'GPS signal unavailable. Please ensure location services are enabled on your device.';
+          errorMsg =
+            'GPS signal unavailable. Please ensure location services are enabled on your device.';
         } else if (error.code === error.TIMEOUT) {
-          errorMsg = 'GPS location request timed out. Retrying...';
+          errorMsg =
+            'GPS location request timed out. Retrying...';
         }
 
         setLocationState({
@@ -60,30 +113,23 @@ export function useUserLocation() {
         maximumAge: 30000,
       }
     );
-  }, []);
+  }, [applyLocation]);
 
-  // Watch position for changes as user moves
+  // Watch position for meaningful changes.
   useEffect(() => {
     requestLocation();
 
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      return;
+    }
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        setLocationState({
-          coords: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
-          status: 'granted',
-          error: null,
-          accuracy: position.coords.accuracy,
-          updatedAt: Date.now(),
-          isSimulated: false,
-        });
+        applyLocation(position);
       },
       (error) => {
-        // Don't overwrite if granted previously unless denied
+        // Don't overwrite an already-granted location unless permission
+        // has actually been denied.
         if (error.code === error.PERMISSION_DENIED) {
           setLocationState({
             coords: null,
@@ -103,11 +149,14 @@ export function useUserLocation() {
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [requestLocation]);
+  }, [requestLocation, applyLocation]);
 
   const getDistanceToCommunity = useCallback(
     (community: Community): number | null => {
-      if (!locationState.coords) return null;
+      if (!locationState.coords) {
+        return null;
+      }
+
       return calculateDistanceInKm(
         locationState.coords.lat,
         locationState.coords.lng,
@@ -120,8 +169,12 @@ export function useUserLocation() {
 
   const isCommunityInGeofence = useCallback(
     (community: Community): boolean => {
-      if (!locationState.coords) return false;
+      if (!locationState.coords) {
+        return false;
+      }
+
       const radius = community.radiusKm || 2.0;
+
       return isWithinGeofence(
         locationState.coords.lat,
         locationState.coords.lng,
@@ -140,4 +193,3 @@ export function useUserLocation() {
     isCommunityInGeofence,
   };
 }
-
