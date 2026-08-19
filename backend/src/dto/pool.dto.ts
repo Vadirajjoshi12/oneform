@@ -45,6 +45,7 @@ export const publicPoolDTO = (pool: any) => {
     poolTotal,
     remainingAmount,
     timeLeftMinutes,
+    expiresAt: pool.expiresAt,
 
     status: pool.status,
     deliveryStatus: pool.deliveryStatus,
