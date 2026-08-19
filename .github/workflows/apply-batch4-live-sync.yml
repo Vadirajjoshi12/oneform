@@ -1,0 +1,72 @@
+name: Apply Batch 4 live sync
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'Batch 4: apply live sync') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply live sync polling
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('frontend/src/components/PoolDetailModal.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          old = '''  useEffect(() => {
+    if (pool?.id && onRefreshPoolDetails) {
+      onRefreshPoolDetails(pool.id).catch(() => {});
+    }
+  }, [pool?.id]);'''
+
+          new = '''  // Batch 4: keep the open pool synchronized with backend changes.
+  useEffect(() => {
+    if (!pool?.id || !onRefreshPoolDetails) return;
+
+    let cancelled = false;
+
+    const refresh = async () => {
+      if (cancelled) return;
+      try {
+        await onRefreshPoolDetails(pool.id);
+      } catch (err) {
+        console.warn('Live pool sync failed:', err);
+      }
+    };
+
+    // Refresh immediately, then poll every 3 seconds while this pool is open.
+    refresh();
+    const intervalId = window.setInterval(refresh, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [pool?.id]);'''
+
+          if 'Batch 4: keep the open pool synchronized' in text:
+              print('Batch 4 live sync is already installed.')
+          elif old in text:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              print('Batch 4 live sync installed.')
+          else:
+              raise SystemExit('Expected refresh effect was not found; refusing to modify the file.')
+
+      - name: Commit patch and remove one-time workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/src/components/PoolDetailModal.tsx
+          git diff --cached --quiet && git rm .github/workflows/apply-batch4-live-sync.yml && git commit -m 'Batch 4: apply live sync' || (git commit -m 'Batch 4: apply live sync' && git rm .github/workflows/apply-batch4-live-sync.yml && git commit -m 'Batch 4: remove patch workflow')
+          git push
