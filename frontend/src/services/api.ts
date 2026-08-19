@@ -73,12 +73,14 @@ export async function createPool(payload: CreatePoolPayload): Promise<ApiRespons
   return request<ApiResponse<BackendPoolData>>(`${API_BASE_URL}/api/pools/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 }
 
+// GPS can jitter by a few metres between browser updates. Using 3 decimal places
+// for the cache key (~100m) prevents those tiny changes from causing a new API call.
 const nearbyRequestCache = new Map<string, { promise: Promise<ApiResponse<BackendPoolData[]>>; timestamp: number }>();
-const NEARBY_REQUEST_CACHE_MS = 5000;
+const NEARBY_REQUEST_CACHE_MS = 8000;
 
 export async function getNearbyPools(lat: number, lng: number, radius = 2): Promise<ApiResponse<BackendPoolData[]>> {
-  const roundedLat = Number(lat.toFixed(4));
-  const roundedLng = Number(lng.toFixed(4));
+  const roundedLat = Number(lat.toFixed(3));
+  const roundedLng = Number(lng.toFixed(3));
   const key = `${roundedLat}:${roundedLng}:${radius}`;
   const cached = nearbyRequestCache.get(key);
   if (cached && Date.now() - cached.timestamp < NEARBY_REQUEST_CACHE_MS) return cached.promise;
@@ -91,7 +93,7 @@ export async function getNearbyPools(lat: number, lng: number, radius = 2): Prom
 // The open-pool modal polls details every few seconds. Cache identical GETs briefly
 // so React re-renders and polling cannot hammer the backend with duplicate requests.
 const poolDetailsCache = new Map<string, { promise: Promise<ApiResponse<BackendPoolData>>; timestamp: number }>();
-const POOL_DETAILS_CACHE_MS = 5000;
+const POOL_DETAILS_CACHE_MS = 8000;
 
 export async function getPoolDetails(poolId: string): Promise<ApiResponse<BackendPoolData>> {
   const cached = poolDetailsCache.get(poolId);
@@ -131,6 +133,6 @@ export async function placeOrder(poolId: string, phone: string): Promise<ApiResp
 }
 
 export async function updateDeliveryStatus(poolId: string, phone: string, deliveryStatus: string): Promise<ApiResponse> {
-  const result = await request<ApiResponse>(`${API_BASE_URL}/api/pools/${poolId}/delivery-status`, { method: 'POST', headers: getHostAuthHeaders(poolId), body: JSON.stringify({ phone, deliveryStatus }) });
+  const result = await request<ApiResponse>(`${API_BASE_URL}/api/pools/${poolId}/delivery-status`, { method: 'POST', headers: getHostAuthHeaders(poolId), body: JSON.stringify({ phone, deliveryStatus }));
   invalidatePoolDetailsCache(poolId); return result;
 }
