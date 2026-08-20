@@ -57,7 +57,7 @@ export const SupportSection: React.FC = () => {
               WhatsApp Helpdesk
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-              Connect directly with our 24/7 support desk for instant help with active order pools, host contacts, or UPI reimbursement queries.
+               Send us an email for account support, community requests, or feedback.
             </p>
           </div>
 
@@ -73,7 +73,7 @@ export const SupportSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          href="mailto:support@1form.app"
+          href="mailto:vadiraj12006@gmail.com"
           className="group bg-[#f5f5f7] hover:bg-blue-50/80 border border-black/[0.05] hover:border-blue-500/30 p-6 sm:p-8 rounded-[24px] flex flex-col justify-between transition-all duration-200 hover:shadow-md"
         >
           <div className="space-y-3">
@@ -89,7 +89,7 @@ export const SupportSection: React.FC = () => {
           </div>
 
           <div className="pt-6 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#0071e3] group-hover:text-blue-800">
-            <span>support@1form.app</span>
+            <span>vadiraj12006@gmail.com</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </div>
         </motion.a>
