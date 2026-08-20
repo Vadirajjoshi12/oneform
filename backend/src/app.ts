@@ -10,7 +10,7 @@ import nearbyRoutes from "./routes/nearby.routes";
 import joinRoutes from "./routes/join.routes";
 
 const app = express();
-
+app.set("trust proxy", 1);
 app.use(
   cors({
     origin: [
