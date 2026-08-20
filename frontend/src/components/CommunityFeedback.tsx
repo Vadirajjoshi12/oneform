@@ -35,12 +35,31 @@ export const CommunityFeedback: React.FC<CommunityFeedbackProps> = ({
     setHasVoted(id);
   };
 
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authorName.trim() || !commentText.trim()) {
-      alert('Please enter your name and comment.');
-      return;
-    }
+ const handleSubmitComment = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  setFeedbackError(null);
+
+  if (!authorName.trim() || !commentText.trim()) {
+    setFeedbackError('Please enter your name and comment.');
+    return;
+  }
+
+  const avatarSeed = authorName.trim().replace(/\s+/g, '');
+
+  onAddComment({
+    authorName: authorName.trim(),
+    authorRole: authorRole.trim() || 'Community Member',
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
+    comment: commentText.trim(),
+    location: location.trim() || 'India',
+  });
+
+  setAuthorName('');
+  setAuthorRole('');
+  setCommentText('');
+};
+    const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
     const avatarSeed = authorName.trim().replace(/\s+/g, '');
 

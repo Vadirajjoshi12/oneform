@@ -31,6 +31,14 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   const [note, setNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+  pickupLocation?: string;
+  hostPhone?: string;
+  hostName?: string;
+  hostPin?: string;
+  itemName?: string;
+  itemPrice?: string;
+}>({});
   
   // Host initial item
   const [itemName, setItemName] = useState<string>('');
@@ -56,26 +64,126 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+setFieldErrors({});
+
+const errors: {
+  pickupLocation?: string;
+  hostPhone?: string;
+  hostName?: string;
+  hostPin?: string;
+  itemName?: string;
+  itemPrice?: string;
+} = {};
+
+if (locationState.status !== 'granted') {
+  setError(
+    'Location access is required to verify your physical presence at this community hub.'
+  );
+  onRequestLocation();
+  return;
+}
+
+if (!isWithinGeofence) {
+  setError(
+    `Location Security Error: You are ${formatDistance(
+      currentDistance!
+    )} away from ${activeCommunity.name}. You must be within ${maxRadiusKm} km of the hub.`
+  );
+  return;
+}
+
+if (!pickupLocation.trim()) {
+  errors.pickupLocation = 'Drop-off location is required.';
+}
+
+if (!hostName.trim()) {
+  errors.hostName = 'Host name is required.';
+}
+
+if (!hostPhone.trim()) {
+  errors.hostPhone = 'Phone number is required.';
+} else if (!/^[6-9]\d{9}$/.test(hostPhone)) {
+  errors.hostPhone =
+    'Enter a valid 10-digit Indian mobile number starting with 6–9.';
+}
+
+if (!hostPin.trim()) {
+  errors.hostPin = 'Host PIN is required.';
+} else if (!/^\d{4,6}$/.test(hostPin)) {
+  errors.hostPin = 'PIN must contain 4–6 digits.';
+}
+
+if (!itemName.trim()) {
+  errors.itemName = 'Item name is required.';
+}
+
+if (itemPrice === '') {
+  errors.itemPrice = 'Price is required.';
+} else if (!Number.isFinite(Number(itemPrice)) || Number(itemPrice) <= 0) {
+  errors.itemPrice = 'Price must be greater than ₹0.';
+}
+
+if (Object.keys(errors).length > 0) {
+  setFieldErrors(errors);
+  return;
+}
+
 
     if (locationState.status !== 'granted') {
-      alert('Location access is required to verify physical presence at this community hub before launching an order pool.');
-      onRequestLocation();
-      return;
-    }
+  setError(
+    'Location access is required to verify your physical presence at this community hub.'
+  );
+  onRequestLocation();
+  return;
+}
 
     if (!isWithinGeofence) {
-      alert(
-        `Location Security Error: You are ${formatDistance(
-          currentDistance!
-        )} away from ${activeCommunity.name}. You must be physically present within ${maxRadiusKm} km of the hub to start an order pool.`
-      );
-      return;
-    }
+  setError(
+    `Location Security Error: You are ${formatDistance(
+      currentDistance!
+    )} away from ${activeCommunity.name}. You must be physically present within ${maxRadiusKm} km of the hub to start an order pool.`
+  );
+  return;
+}
 
-    if (!pickupLocation.trim() || !hostName.trim() || !hostPhone.trim() || !itemName.trim() || !itemPrice || Number(itemPrice) <= 0) {
-      alert('Please fill in all required fields (Drop Location, Host Name, Phone, Item Name and Price).');
-      return;
-    }
+    if (!pickupLocation.trim()) {
+  errors.pickupLocation = 'Drop-off location is required.';
+}
+
+if (!hostName.trim()) {
+  errors.hostName = 'Host name is required.';
+}
+
+if (!hostPhone.trim()) {
+  errors.hostPhone = 'Phone number is required.';
+} else if (!/^[6-9]\d{9}$/.test(hostPhone)) {
+  errors.hostPhone =
+    'Enter a valid 10-digit Indian mobile number starting with 6–9.';
+}
+
+if (!hostPin.trim()) {
+  errors.hostPin = 'Host PIN is required.';
+} else if (!/^\d{4,6}$/.test(hostPin)) {
+  errors.hostPin = 'PIN must contain 4–6 digits.';
+}
+
+if (!itemName.trim()) {
+  errors.itemName = 'Item name is required.';
+}
+
+if (itemPrice === '') {
+  errors.itemPrice = 'Price is required.';
+} else if (
+  !Number.isFinite(Number(itemPrice)) ||
+  Number(itemPrice) <= 0
+) {
+  errors.itemPrice = 'Price must be greater than ₹0.';
+}
+
+if (Object.keys(errors).length > 0) {
+  setFieldErrors(errors);
+  return;
+}
 
     const initialPrice = Number(itemPrice);
     const backendPlatform = platform === 'Swiggy Instamart' ? 'Instamart' : platform;
@@ -244,14 +352,36 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
               <MapPin className="w-3.5 h-3.5 text-slate-500" />
               2. Drop-off Location
             </label>
-            <input
-              type="text"
-              required
-              placeholder="Drop-off location"
-              value={pickupLocation}
-              onChange={(e) => setPickupLocation(e.target.value)}
-              className="w-full bg-white border border-black/[0.08] focus:border-black/30 rounded-xl px-3.5 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
-            />
+            <div>
+  <input
+    type="text"
+    required
+    placeholder="Drop-off location"
+    value={pickupLocation}
+    onChange={(e) => {
+      setPickupLocation(e.target.value);
+
+      if (fieldErrors.pickupLocation) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          pickupLocation: undefined,
+        }));
+      }
+    }}
+    className={`w-full bg-white border ${
+      fieldErrors.pickupLocation
+        ? 'border-rose-400 focus:border-rose-500'
+        : 'border-black/[0.08] focus:border-black/30'
+    } rounded-xl px-3.5 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none`}
+  />
+
+  {fieldErrors.pickupLocation && (
+    <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
+      <AlertTriangle className="w-3 h-3 shrink-0" />
+      {fieldErrors.pickupLocation}
+    </p>
+  )}
+</div>
           </div>
 
           {/* Step 3: Timer & Phone */}
@@ -278,13 +408,41 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                 <Phone className="w-3.5 h-3.5 text-slate-500" />
                 Phone
               </label>
-              <input
-                type="tel"
-                placeholder="Phone number"
-                value={hostPhone}
-                onChange={(e) => setHostPhone(e.target.value)}
-                className="w-full bg-white border border-black/[0.08] focus:border-black/30 rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
-              />
+              <div>
+  <input
+    type="tel"
+    inputMode="numeric"
+    maxLength={10}
+    placeholder="Phone number"
+    value={hostPhone}
+    onChange={(e) => {
+      const value = e.target.value
+        .replace(/\D/g, '')
+        .slice(0, 10);
+
+      setHostPhone(value);
+
+      if (fieldErrors.hostPhone) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          hostPhone: undefined,
+        }));
+      }
+    }}
+    className={`w-full bg-white border ${
+      fieldErrors.hostPhone
+        ? 'border-rose-400 focus:border-rose-500'
+        : 'border-black/[0.08] focus:border-black/30'
+    } rounded-xl px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none`}
+  />
+
+  {fieldErrors.hostPhone && (
+    <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
+      <AlertTriangle className="w-3 h-3 shrink-0" />
+      {fieldErrors.hostPhone}
+    </p>
+  )}
+</div>
             </div>
           </div>
 
@@ -302,48 +460,153 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
             <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  required
-                  placeholder="Host name"
-                  value={hostName}
-                  onChange={(e) => setHostName(e.target.value)}
-                  className="sm:col-span-2 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
-                />
+                <div className="sm:col-span-2">
+  <input
+    type="text"
+    required
+    placeholder="Host name"
+    value={hostName}
+    onChange={(e) => {
+      setHostName(e.target.value);
 
-                <input
-                  type="password"
-                  maxLength={6}
-                  required
-                  placeholder="Host PIN (e.g. 1234)"
-                  value={hostPin}
-                  onChange={(e) => setHostPin(e.target.value)}
-                  className="bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none font-mono"
-                  title="Host Security PIN used to access Host Controls"
-                />
+      if (fieldErrors.hostName) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          hostName: undefined,
+        }));
+      }
+    }}
+    className={`w-full bg-white border ${
+      fieldErrors.hostName
+        ? 'border-rose-400 focus:border-rose-500'
+        : 'border-black/[0.06] focus:border-black/30'
+    } rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none`}
+  />
+
+  {fieldErrors.hostName && (
+    <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
+      <AlertTriangle className="w-3 h-3 shrink-0" />
+      {fieldErrors.hostName}
+    </p>
+  )}
+</div>
+
+                <div>
+  <input
+    type="password"
+    inputMode="numeric"
+    maxLength={6}
+    required
+    placeholder="Host PIN (4–6 digits)"
+    value={hostPin}
+    onChange={(e) => {
+      const value = e.target.value
+        .replace(/\D/g, '')
+        .slice(0, 6);
+
+      setHostPin(value);
+
+      if (fieldErrors.hostPin) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          hostPin: undefined,
+        }));
+      }
+    }}
+    className={`w-full bg-white border ${
+      fieldErrors.hostPin
+        ? 'border-rose-400 focus:border-rose-500'
+        : 'border-black/[0.06] focus:border-black/30'
+    } rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none font-mono`}
+    title="Host Security PIN used to access Host Controls"
+  />
+
+  {fieldErrors.hostPin && (
+    <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
+      <AlertTriangle className="w-3 h-3 shrink-0" />
+      {fieldErrors.hostPin}
+    </p>
+  )}
+</div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  required
-                  placeholder="Item name"
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  className="sm:col-span-2 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
-                />
+                <div className="sm:col-span-2">
+  <input
+    type="text"
+    required
+    placeholder="Item name"
+    value={itemName}
+    onChange={(e) => {
+      setItemName(e.target.value);
+
+      if (fieldErrors.itemName) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          itemName: undefined,
+        }));
+      }
+    }}
+    className={`w-full bg-white border ${
+      fieldErrors.itemName
+        ? 'border-rose-400 focus:border-rose-500'
+        : 'border-black/[0.06] focus:border-black/30'
+    } rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none`}
+  />
+
+  {fieldErrors.itemName && (
+    <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
+      <AlertTriangle className="w-3 h-3 shrink-0" />
+      {fieldErrors.itemName}
+    </p>
+  )}
+</div>
 
                 <div className="relative">
                   <span className="absolute left-3 top-1.5 text-slate-400 text-xs">₹</span>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    placeholder="Price"
-                    value={itemPrice}
-                    onChange={(e) => setItemPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full pl-6 bg-white border border-black/[0.06] focus:border-black/30 rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none"
-                  />
+                  <div>
+  <div className="relative">
+    <span className="absolute left-3 top-1.5 text-slate-400 text-xs">
+      ₹
+    </span>
+
+    <input
+      type="number"
+      required
+      min="1"
+      step="1"
+      inputMode="decimal"
+      placeholder="Price"
+      value={itemPrice}
+      onChange={(e) => {
+        setItemPrice(
+          e.target.value === ''
+            ? ''
+            : Number(e.target.value)
+        );
+
+        if (fieldErrors.itemPrice) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            itemPrice: undefined,
+          }));
+        }
+      }}
+      className={`w-full pl-6 bg-white border ${
+        fieldErrors.itemPrice
+          ? 'border-rose-400 focus:border-rose-500'
+          : 'border-black/[0.06] focus:border-black/30'
+      } rounded-xl px-3 py-1.5 text-xs text-[#1d1d1f] placeholder:text-slate-400 focus:outline-none`}
+    />
+  </div>
+
+  {fieldErrors.itemPrice && (
+    <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
+      <AlertTriangle className="w-3 h-3 shrink-0" />
+      {fieldErrors.itemPrice}
+    </p>
+  )}
+</div>
                 </div>
               </div>
 
