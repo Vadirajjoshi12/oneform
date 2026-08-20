@@ -160,7 +160,6 @@ export default function App() {
     setPools((prev) => [newPool, ...prev]);
     setToastMessage(`🎉 1Form Pool started for ${newPool.platform} at ${newPool.pickupLocation}!`);
   };
-
 const handleRefreshPoolDetails = useCallback(async (poolId: string) => {
   try {
     const res = await api.getPoolDetails(poolId);
@@ -169,35 +168,37 @@ const handleRefreshPoolDetails = useCallback(async (poolId: string) => {
       return;
     }
 
-    // Find the existing pool
-    const existingPool = pools.find(
-      (pool) => pool.id === poolId
-    );
+    setPools((prevPools) => {
+      const existingPool =
+        prevPools.find((p) => p.id === poolId) || null;
 
-    // Convert backend data to frontend pool format
-    const updatedPool = api.mapBackendPoolToOrderPool(
-      res.data,
-      activeCommunity.name,
-      existingPool
-    );
+      const updatedPool = api.mapBackendPoolToOrderPool(
+        res.data,
+        activeCommunity.name,
+        existingPool
+      );
 
-    // Update pools list
-    setPools((prevPools) =>
-      prevPools.map((pool) =>
-        pool.id === poolId ? updatedPool : pool
-      )
-    );
+      return prevPools.map((p) =>
+        p.id === poolId ? updatedPool : p
+      );
+    });
 
-    // IMPORTANT:
-    // Update the pool currently displayed in the modal
-    if (selectedPoolForDetail?.id === poolId) {
-      setSelectedPoolForDetail(updatedPool);
-    }
+    setSelectedPoolForDetail((currentPool) => {
+      if (!currentPool || currentPool.id !== poolId) {
+        return currentPool;
+      }
 
-    } catch (err: any) {
+      return api.mapBackendPoolToOrderPool(
+        res.data,
+        activeCommunity.name,
+        currentPool
+      );
+    });
+
+  } catch (err: any) {
     console.warn(
       'Failed to refresh pool details:',
-      err.message
+      err?.message || err
     );
   }
 }, [activeCommunity.name]);
